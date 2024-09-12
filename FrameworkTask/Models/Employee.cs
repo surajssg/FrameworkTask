@@ -18,5 +18,6 @@ namespace FrameworkTask.Models
 
         public int DeptId { get; set; }
 
+        public int SubDeptId { get; set; }
     }
 }
