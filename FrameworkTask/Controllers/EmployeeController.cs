@@ -7,52 +7,68 @@ namespace FrameworkTask.Controllers
 {
     public class EmployeeController : Controller
     {
-        private EmployeeService employeeService = new EmployeeService();
+        private readonly EmployeeService _employeeService;
+
+        public EmployeeController()
+        {
+            _employeeService = new EmployeeService();
+        }
 
         // Index action to list all employees
         public ActionResult Index()
         {
-            var employees = employeeService.GetEmployees();
+            var employees = _employeeService.GetEmployees();
             return View(employees);
         }
 
+        
         public ActionResult Create()
         {
-            var departments = employeeService.GetDepartments(); // Get the department list from the service
-            ViewBag.Departments = new SelectList(departments, "DeptId", "DeptName"); // Populate ViewBag
+            // Load departments for the dropdown
+            ViewBag.Departments = new SelectList(_employeeService.GetDepartments(), "DeptId", "DeptName");
             return View();
         }
 
+        [HttpPost]
+        public JsonResult GetSubDepartments(int deptId)
+        {
+            var subDepartments = _employeeService.GetSubDepartments(deptId);
+            return Json(subDepartments);
+        }
+
+
+        // POST: Employee/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create(Employee employee)
         {
             if (ModelState.IsValid)
             {
-                employeeService.CreateEmployee(employee);
+                _employeeService.CreateEmployee(employee);
                 return RedirectToAction("Index");
             }
 
-            // Repopulate ViewBag in case of an error
-            var departments = employeeService.GetDepartments();
-            ViewBag.Departments = new SelectList(departments, "DeptId", "DeptName");
-
+            // Reload departments
+            ViewBag.Departments = new SelectList(_employeeService.GetDepartments(), "DeptId", "DeptName");
             return View(employee);
         }
 
 
 
+        // GET: Employee/Edit/5
         public ActionResult Update(int id)
         {
-            var employee = employeeService.GetEmployeeById(id);
+            var employee = _employeeService.GetEmployeeById(id);
             if (employee == null)
             {
                 return HttpNotFound();
             }
 
-            // Fetch the departments and pass them to the view
-            var departments = employeeService.GetDepartments();
-            ViewBag.Departments = new SelectList(departments, "DeptId", "DeptName", employee.DeptId); // Pass selected DeptId
+            // Populate the departments
+            ViewBag.Departments = new SelectList(_employeeService.GetDepartments(), "DeptId", "DeptName", employee.DeptId);
+
+            // Fetch subdepartments for the employee's department
+            ViewBag.SubDepartments = new SelectList(_employeeService.GetSubDepartments(employee.DeptId), "SubDeptId", "SubDeptName", employee.SubDeptId);
 
             return View(employee);
         }
@@ -61,20 +77,20 @@ namespace FrameworkTask.Controllers
 
 
 
-        [HttpPost]
+        //POST: Employee/Edit/5
+    [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Update(Employee employee)
+        public ActionResult Edit(Employee employee)
         {
             if (ModelState.IsValid)
             {
-                employeeService.UpdateEmployee(employee); // Save the updated employee including DeptId
+                _employeeService.UpdateEmployee(employee);
                 return RedirectToAction("Index");
             }
 
-            // Repopulate the departments in case of an error
-            var departments = employeeService.GetDepartments();
-            ViewBag.Departments = new SelectList(departments, "DeptId", "DeptName", employee.DeptId);
-
+            // Reload departments and subdepartments if model state is invalid
+            ViewBag.Departments = new SelectList(_employeeService.GetDepartments(), "DeptId", "DeptName", employee.DeptId);
+            ViewBag.SubDepartments = new SelectList(_employeeService.GetSubDepartments(employee.DeptId), "SubDeptId", "SubDeptName", employee.SubDeptId);
             return View(employee);
         }
 
@@ -82,7 +98,7 @@ namespace FrameworkTask.Controllers
         // Delete - GET
         public ActionResult Delete(int id)
         {
-            var employee = employeeService.GetEmployeeById(id);
+            var employee = _employeeService.GetEmployeeById(id);
             if (employee == null)
             {
                 return HttpNotFound();
@@ -96,12 +112,12 @@ namespace FrameworkTask.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult DeleteConfirmed(int id)
         {
-            employeeService.DeleteEmployee(id);
+            _employeeService.DeleteEmployee(id);
             return RedirectToAction("Index");
         }
 
         public ActionResult Details(int id) {
-            var employee = employeeService.GetEmployeeById(id);
+            var employee = _employeeService.GetEmployeeById(id);
             if (employee == null)
             {
                 return HttpNotFound();
@@ -109,5 +125,6 @@ namespace FrameworkTask.Controllers
 
             return View(employee);
         }
+        
     }
 }

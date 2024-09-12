@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using FrameworkTask.Models;
 
 namespace FrameworkTask.Services
@@ -181,11 +182,11 @@ namespace FrameworkTask.Services
         // Fetch list of departments
         public List<Department> GetDepartments()
         {
-            List<Department> departments = new List<Department>();
+            List<Department> department= new List<Department>();
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = "SELECT DeptId, DeptName FROM Department";
+                string query = "SELECT DeptId, DeptName FROM Department"; // Ensure 'Departments' table name is correct
                 SqlCommand cmd = new SqlCommand(query, conn);
 
                 try
@@ -195,7 +196,7 @@ namespace FrameworkTask.Services
 
                     while (reader.Read())
                     {
-                        departments.Add(new Department
+                        department.Add(new Department
                         {
                             DeptId = reader["DeptId"] != DBNull.Value ? Convert.ToInt32(reader["DeptId"]) : 0,
                             DeptName = reader["DeptName"].ToString()
@@ -210,44 +211,43 @@ namespace FrameworkTask.Services
                 }
             }
 
-            return departments;
+            return department;
         }
 
-        //public List<SubDepartment> GetSubDepartmentsByDeptId(int deptId)
-        //{
-        //    List<SubDepartment> subDepartments = new List<SubDepartment>();
+        // Fetch list of subdepartments by department ID
+        public List<SubDepartment> GetSubDepartments(int deptId)
+        {
+            List<SubDepartment> subDepartments = new List<SubDepartment>();
 
-        //    using (SqlConnection conn = new SqlConnection(connectionString))
-        //    {
-        //        SqlCommand cmd = new SqlCommand("spGetSubDepartmentsByDeptId", conn);
-        //        cmd.CommandType = CommandType.StoredProcedure;
-        //        cmd.Parameters.AddWithValue("@DeptId", deptId);
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = "SELECT SubDeptId, SubDeptName FROM SubDepartments WHERE DeptId = @DeptId"; // Ensure 'SubDepartments' table name is correct
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@DeptId", deptId);
 
-        //        try
-        //        {
-        //            conn.Open();
-        //            SqlDataReader reader = cmd.ExecuteReader();
+                try
+                {
+                    conn.Open();
+                    SqlDataReader reader = cmd.ExecuteReader();
 
-        //            while (reader.Read())
-        //            {
-        //                subDepartments.Add(new SubDepartment
-        //                {
-        //                    SubDeptId = reader["SubDeptId"] != DBNull.Value ? Convert.ToInt32(reader["SubDeptId"]) : 0,
-        //                    SubDepartmentName = reader["SubDepartment"].ToString(),
-        //                    DeptId = reader["DeptId"] != DBNull.Value ? Convert.ToInt32(reader["DeptId"]) : 0
-        //                });
-        //            }
+                    while (reader.Read())
+                    {
+                        subDepartments.Add(new SubDepartment
+                        {
+                            SubDeptId = reader["SubDeptId"] != DBNull.Value ? Convert.ToInt32(reader["SubDeptId"]) : 0,
+                            SubDepartmentName = reader["SubDeptName"].ToString()
+                        });
+                    }
 
-        //            reader.Close();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            throw new Exception("Error fetching sub-departments", ex);
-        //        }
-        //    }
+                    reader.Close();
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Error fetching subdepartments", ex);
+                }
+            }
 
-        //    return subDepartments;
-        //}
-
+            return subDepartments;
+        }
     }
 }
